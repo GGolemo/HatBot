@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Most recent saved pfp
+# Most recent saved pfp and default picture
 images/pfp.png
 images/murkyhuh.png
 

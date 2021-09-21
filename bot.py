@@ -4,6 +4,7 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 from PIL import Image
+from PIL import ImageOps
 
 from io import BytesIO
 
@@ -18,29 +19,52 @@ GUILD = os.getenv('DISCORD_GUILD')
 bot = commands.Bot(command_prefix='!', intents=intents)
 bot.delete = 0.0
 bot.hat_size = (200, 200)
+bot.flip = False
 
 
 @bot.command(name='getpfp', help='gets url to your profile picture')
 async def getpfp(ctx):
+    asset = ctx.author.avatar_url_as()
+    data = BytesIO(await asset.read())
+    pfp = Image.open(data)
     await ctx.send(ctx.author.avatar_url)
+    width, height = pfp.size
+    await ctx.send(f'Your hat is {width} by {height}')
+
+
+@bot.command(name='xmashat')
+async def xmashat(ctx, x: float, y: float):
+    await hat(ctx, x, y, 'xmashat')
+
+
+@bot.command(name='witchhat')
+async def witchhat(ctx, x: float, y: float):
+    await hat(ctx, x, y, 'witchhat')
+
+
+@bot.command(name='sunglasses')
+async def sunglasses(ctx, x: float, y: float):
+    await hat(ctx, x, y, 'sunglasses')
 
 
 @bot.command(name='hat', help=f'attaches a hat to your avatar. Two optional arguments to specify percent. !hat .5 .5 '
                               f'will put the middle of the hat 50% across, 50% down.')
-async def hat(ctx, x: float = 0.0, y: float = 0.0):
+async def hat(ctx, x: float = 0.0, y: float = 0.0, hattype: str = 'xmashat'):
     asset = ctx.author.avatar_url_as()
     data = BytesIO(await asset.read())
     pfp = Image.open(data)
     width, height = pfp.size
-    xmas_hat = Image.open(r'images/christmas_hat.png')
-    xmas_hat = xmas_hat.resize(bot.hat_size)
+    hat_image = Image.open(fr'images/{hattype}.png')
+    hat_image = hat_image.resize(bot.hat_size)
+    if bot.flip:
+        hat_image = ImageOps.mirror(hat_image)
     if x == 0.0:
         #print(f'width: {width / 4.0}\ny: {y}')
-        pfp.paste(xmas_hat, (int(width / 4.0), int(y)), mask=xmas_hat)
+        pfp.paste(hat_image, (int(width / 4.0), int(y)), mask=hat_image)
     else:
-        pfp.paste(xmas_hat, (int(float(x) * float(width) - bot.hat_size[0]/2), int(float(y) * float(height) -
-                                                                                   bot.hat_size[1]/2)), mask=xmas_hat)
-        # pfp.paste(xmas_hat, (int(x), int(y)), mask=xmas_hat)
+        pfp.paste(hat_image, (int(float(x) * float(width) - bot.hat_size[0] / 2), int(float(y) * float(height) -
+                                                                                      bot.hat_size[1] / 2)), mask=hat_image)
+        # pfp.paste(hat_image, (int(x), int(y)), mask=hat_image)
     pfp.save('images/pfp.png', 'PNG')
     if bot.delete:
         # print('del is num')
@@ -51,7 +75,7 @@ async def hat(ctx, x: float = 0.0, y: float = 0.0):
 
 
 # stretchy hat
-@bot.command(name='resize_stretch', help='resize the hat to x pixels by x pixels')
+@bot.command(name='resize_stretch', help='resize the hat to x pixels by y pixels')
 async def resize_stretch(ctx, x: int, y: int):
     if x == 0 or y == 0:
         await ctx.send('pls don\'t kill hat ):')
@@ -79,6 +103,11 @@ async def delete_after(ctx, x: float):
         await ctx.send(f'Images will now delete after {x} seconds')
 
 
+@bot.command(name='flip', help='flips hat horizontally')
+async def flip(ctx):
+    bot.flip = not bot.flip
+
+
 # error catch
 @bot.event
 async def on_error(event, *args, **kwargs):
@@ -93,6 +122,19 @@ async def on_error(event, *args, **kwargs):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for the command.')
+
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        arg = error.param.name
+        await ctx.send(f'Missing argument: {arg}')
+
+
+@bot.listen('on_message')
+async def v(message):
+    if not message.author.bot and message.content == 'v':
+        await message.channel.send('YOU SUCK AT PASTE')
 
 
 bot.run(TOKEN)
