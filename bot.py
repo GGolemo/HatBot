@@ -20,6 +20,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 bot.delete = 0.0
 bot.hat_size = (200, 200)
 bot.flip = False
+bot.rotate = 0
 
 
 @bot.command(name='getpfp', help='gets url to your profile picture')
@@ -58,6 +59,8 @@ async def hat(ctx, x: float = 0.0, y: float = 0.0, hattype: str = 'xmashat'):
     hat_image = hat_image.resize(bot.hat_size)
     if bot.flip:
         hat_image = ImageOps.mirror(hat_image)
+    if bot.rotate:
+        hat_image = hat_image.rotate(bot.rotate)
     if x == 0.0:
         #print(f'width: {width / 4.0}\ny: {y}')
         pfp.paste(hat_image, (int(width / 4.0), int(y)), mask=hat_image)
@@ -106,6 +109,13 @@ async def delete_after(ctx, x: float):
 @bot.command(name='flip', help='flips hat horizontally')
 async def flip(ctx):
     bot.flip = not bot.flip
+    await ctx.send(f'Flipped hat')
+
+
+@bot.command(name='rotate', help='rotate hat x degrees')
+async def rotate(ctx, x: int):
+    bot.rotate = x
+    await ctx.send(f'Rotated image {bot.rotate} degrees')
 
 
 # error catch
